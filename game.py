@@ -12,6 +12,7 @@ BLOCK_SIZE = 80
 # rgb colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GRAY = (128, 128, 128)
 RED = (200, 0, 0)
 BLUE = (0, 0, 200)
 
@@ -41,25 +42,32 @@ class sudoku:
         def shuffle(s):
             return sample(s, len(s))
 
-        rBase = range(base)
-        rows = [g * base + r for g in shuffle(rBase) for r in shuffle(rBase)]
-        cols = [g * base + c for g in shuffle(rBase) for c in shuffle(rBase)]
+        base_range = range(base)
+        rows = [g * base + r for g in shuffle(base_range) for r in shuffle(base_range)]
+        cols = [g * base + c for g in shuffle(base_range) for c in shuffle(base_range)]
         nums = shuffle(range(1, base * base + 1))
 
         # produce board using randomized baseline pattern
-        self.board = [[nums[pattern(r, c)] for c in cols] for r in rows]
+        self.board = [[{
+            "num": nums[pattern(r, c)],
+            "locked": True
+        } for c in cols] for r in rows]
 
-        # Remove some nums
+        # Remove parts of board
         squares = side * side
         empties = squares * 3 // 4
         for p in sample(range(squares), empties):
-            self.board[p // side][p % side] = 0
+            self.board[p // side][p % side] = {
+                "num": 0,
+                "locked": False
+            }
 
         self.draw_ui()
 
     def play_step(self):
         # 1: collect user input
         legal = True
+        player = self.board[self.pos[0]][self.pos[1]]
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -67,30 +75,28 @@ class sudoku:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 self.pos = [pos[0] // BLOCK_SIZE, pos[1] // BLOCK_SIZE]
-
-                # 3: Draw Board
                 self.draw_ui()
-            elif event.type == KEYDOWN:
+            elif event.type == KEYDOWN and not player["locked"]:
                 if event.key == K_0:
-                    self.board[self.pos[0]][self.pos[1]] = 0
+                    player["num"] = 0
                 elif event.key == K_1:
-                    self.board[self.pos[0]][self.pos[1]] = 1
+                    player["num"] = 1
                 elif event.key == K_2:
-                    self.board[self.pos[0]][self.pos[1]] = 2
+                    player["num"] = 2
                 elif event.key == K_3:
-                    self.board[self.pos[0]][self.pos[1]] = 3
+                    player["num"] = 3
                 elif event.key == K_4:
-                    self.board[self.pos[0]][self.pos[1]] = 4
+                    player["num"] = 4
                 elif event.key == K_5:
-                    self.board[self.pos[0]][self.pos[1]] = 5
+                    player["num"] = 5
                 elif event.key == K_6:
-                    self.board[self.pos[0]][self.pos[1]] = 6
+                    player["num"] = 6
                 elif event.key == K_7:
-                    self.board[self.pos[0]][self.pos[1]] = 7
+                    player["num"] = 7
                 elif event.key == K_8:
-                    self.board[self.pos[0]][self.pos[1]] = 8
+                    player["num"] = 8
                 elif event.key == K_9:
-                    self.board[self.pos[0]][self.pos[1]] = 9
+                    player["num"] = 9
                 self.draw_ui()
 
         return legal
@@ -108,9 +114,13 @@ class sudoku:
         # Draw numbers on board
         for i in range(BOARD_SIZE):
             for j in range(BOARD_SIZE):
-                if self.board[i][j]:
-                    self.display.blit(font.render(str(self.board[i][j]), False, BLACK),
-                                      ((i + 0.2) * BLOCK_SIZE, j * BLOCK_SIZE))
+                if self.board[i][j]["num"]:
+                    if self.board[i][j]["locked"]:
+                        self.display.blit(font.render(str(self.board[i][j]["num"]), False, BLACK),
+                                          ((i + 0.2) * BLOCK_SIZE, j * BLOCK_SIZE))
+                    else:
+                        self.display.blit(font.render(str(self.board[i][j]["num"]), False, GRAY),
+                                          ((i + 0.2) * BLOCK_SIZE, j * BLOCK_SIZE))
 
         # Current Block
         rect = pygame.Rect(self.pos[0] * BLOCK_SIZE, self.pos[1] * BLOCK_SIZE, BLOCK_SIZE,
