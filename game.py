@@ -64,6 +64,28 @@ class sudoku:
 
         self.draw_ui()
 
+    def check_move(self):
+        num = self.board[self.pos[0]][self.pos[1]]["num"]
+
+        # Check columns
+        for i in range(len(self.board)):
+            if [self.pos[0], i] != self.pos and self.board[self.pos[0]][i]["num"] == num:
+                return False
+
+        # Check rows
+        for i in range(len(self.board)):
+            if [i, self.pos[1]] != self.pos and self.board[i][self.pos[1]]["num"] == num:
+                return False
+
+        # Check square
+        square = [self.pos[0] // 3, self.pos[1] // 3]
+        for i in range(square[0]*3, square[0]*3 + 3):
+            for j in range(square[1]*3, square[1]*3 + 3):
+                if [i, j] != self.pos and self.board[i][j]["num"] == num:
+                    return False
+
+        return True
+
     def play_step(self):
         # 1: collect user input
         legal = True
@@ -76,27 +98,43 @@ class sudoku:
                 pos = pygame.mouse.get_pos()
                 self.pos = [pos[0] // BLOCK_SIZE, pos[1] // BLOCK_SIZE]
                 self.draw_ui()
-            elif event.type == KEYDOWN and not player["locked"]:
-                if event.key == K_0:
-                    player["num"] = 0
-                elif event.key == K_1:
-                    player["num"] = 1
-                elif event.key == K_2:
-                    player["num"] = 2
-                elif event.key == K_3:
-                    player["num"] = 3
-                elif event.key == K_4:
-                    player["num"] = 4
-                elif event.key == K_5:
-                    player["num"] = 5
-                elif event.key == K_6:
-                    player["num"] = 6
-                elif event.key == K_7:
-                    player["num"] = 7
-                elif event.key == K_8:
-                    player["num"] = 8
-                elif event.key == K_9:
-                    player["num"] = 9
+            elif event.type == KEYDOWN:
+                if not player["locked"]:
+                    if event.key == K_0:
+                        player["num"] = 0
+                    elif event.key == K_1:
+                        player["num"] = 1
+                    elif event.key == K_2:
+                        player["num"] = 2
+                    elif event.key == K_3:
+                        player["num"] = 3
+                    elif event.key == K_4:
+                        player["num"] = 4
+                    elif event.key == K_5:
+                        player["num"] = 5
+                    elif event.key == K_6:
+                        player["num"] = 6
+                    elif event.key == K_7:
+                        player["num"] = 7
+                    elif event.key == K_8:
+                        player["num"] = 8
+                    elif event.key == K_9:
+                        player["num"] = 9
+                    elif event.key == K_RETURN:
+                        if self.check_move():
+                            player["locked"] = True
+                        else:
+                            player["num"] = 0
+                    elif event.key == K_BACKSPACE:
+                        player["num"] = 0
+                if event.key == K_UP and self.pos[1] > 0:
+                    self.pos[1] -= 1
+                elif event.key == K_LEFT and self.pos[0] > 0:
+                    self.pos[0] -= 1
+                elif event.key == K_DOWN and self.pos[1] < 8:
+                    self.pos[1] += 1
+                elif event.key == K_RIGHT and self.pos[0] < 8:
+                    self.pos[0] += 1
                 self.draw_ui()
 
         return legal
