@@ -21,7 +21,7 @@ BLUE = (0, 0, 200)
 
 
 class sudoku:
-    def __init__(self):
+    def __init__(self, empty):
         # Pygame display
         self.w = TILE_SIZE * BOARD_SIZE
         self.h = TILE_SIZE * (BOARD_SIZE + 1)
@@ -29,10 +29,11 @@ class sudoku:
         pygame.display.set_caption('Sudoku')
 
         self.board = None
+        self.empty = empty
         self.pos = [0, 0]
-        self.reset(10)
+        self.reset()
 
-    def reset(self, empty):
+    def reset(self):
         # Generates board
         rows = [i * BLOCK_SIZE + j for i in sample(BLOCKS, len(BLOCKS))
                 for j in sample(BLOCKS, len(BLOCKS))]
@@ -48,13 +49,26 @@ class sudoku:
 
         # Remove parts of board
         positions = [[i, j] for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)]
-        for pos in sample(positions, empty):
+        for pos in sample(positions, self.empty):
             self.board[pos[0]][pos[1]] = {
                 "num": 0,
                 "locked": False
             }
 
         self.draw_ui()
+
+    def solve(self):
+        tile = self.board[self.pos[0]][self.pos[1]]
+        if not tile["locked"]:
+            possible = self.get_possible(self.pos)
+            if possible:
+                tile["num"] = possible[0]
+
+        # Recursive call
+        if self.empty and self.pos != [8, 8]:
+            self.pos[1] = (self.pos[1] + 1) % 9
+            self.pos[0] += self.pos[1] == 0
+            self.solve()
 
     def get_possible(self, pos):
         possible = NUMBERS[:]
@@ -102,7 +116,7 @@ class sudoku:
 
     def play_step(self):
         # 1: collect user input
-        legal = True
+        game_over = False
         player = self.board[self.pos[0]][self.pos[1]]
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -137,8 +151,13 @@ class sudoku:
                     elif event.key == K_RETURN:
                         if self.check_move():
                             player["locked"] = True
+                            self.empty -= 1
                         else:
                             player["num"] = 0
+
+                        # Check for complete board
+                        if self.empty == 0:
+                            game_over = True
                 if event.key == K_UP:
                     self.pos[1] = (self.pos[1] + 8) % 9
                 elif event.key == K_LEFT:
@@ -148,11 +167,16 @@ class sudoku:
                 elif event.key == K_RIGHT:
                     self.pos[0] = (self.pos[0] + 10) % 9
                 elif event.key == K_BACKSPACE:
-                    player["num"] = 0
-                    player["locked"] = False
+                    if player["locked"]:
+                        player["num"] = 0
+                        player["locked"] = False
+                        self.empty += 1
+                elif event.key == K_SPACE:
+                    self.pos = [0, 0]
+                    self.solve()
                 self.draw_ui()
 
-        return legal
+        return game_over
 
     def draw_ui(self):
         # Draw Board
