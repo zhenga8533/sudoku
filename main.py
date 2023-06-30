@@ -7,4 +7,5 @@ if __name__ == '__main__':
 
     # game loop
     while True:
-        game.play_step()
+        if not game.play_step():
+            break
