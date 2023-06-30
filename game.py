@@ -125,8 +125,6 @@ class sudoku:
                             player["locked"] = True
                         else:
                             player["num"] = 0
-                    elif event.key == K_BACKSPACE:
-                        player["num"] = 0
                 if event.key == K_UP and self.pos[1] > 0:
                     self.pos[1] -= 1
                 elif event.key == K_LEFT and self.pos[0] > 0:
@@ -135,6 +133,9 @@ class sudoku:
                     self.pos[1] += 1
                 elif event.key == K_RIGHT and self.pos[0] < 8:
                     self.pos[0] += 1
+                elif event.key == K_BACKSPACE:
+                    player["num"] = 0
+                    player["locked"] = False
                 self.draw_ui()
 
         return legal
