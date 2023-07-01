@@ -2,9 +2,7 @@ import pygame
 from pygame.locals import *
 from random import sample
 from board import tile
-
-pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
+import time
 
 # pygame constants
 BLOCK_SIZE = 3
@@ -18,12 +16,15 @@ WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
 BLACK = (0, 0, 0)
 RED = (200, 0, 0)
+GREEN = (0, 200, 0)
 BLUE = (0, 0, 200)
 
 
 class sudoku:
     def __init__(self, empty):
-        # Pygame display
+        # Initialize pygame
+        pygame.init()
+        self.font = pygame.font.Font('arial.ttf', 25)
         self.w = TILE_SIZE * BOARD_SIZE
         self.h = TILE_SIZE * (BOARD_SIZE + 1)
         self.display = pygame.display.set_mode((self.w, self.h))
@@ -43,7 +44,7 @@ class sudoku:
         nums = sample(NUMBERS, len(NUMBERS))
 
         # Uses randomized baseline pattern
-        self.board = [[tile(nums[(3*(row % 3) + row//3 + col) % 9], True) for col in cols] for row in rows]
+        self.board = [[tile(nums[(3 * (row % 3) + row // 3 + col) % 9], True) for col in cols] for row in rows]
 
         # Remove parts of board
         positions = [[i, j] for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)]
@@ -53,9 +54,15 @@ class sudoku:
         self.draw_ui()
 
     def solve(self):
+        # Loop Timeout
+        time.sleep(0.9 ** self.empty / 9)
         if self.empty == 0:
             return True
         pos = self.find_empty()
+
+        # Draw UI
+        self.pos = pos[:]
+        self.draw_ui()
 
         # Loop through all numbers
         for num in range(1, len(self.board) + 1):
@@ -129,12 +136,12 @@ class sudoku:
             if event.type == QUIT:
                 pygame.quit()
                 quit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:  # Player mouse position
                 pos = pygame.mouse.get_pos()
                 self.pos = [pos[0] // TILE_SIZE, pos[1] // TILE_SIZE]
                 self.draw_ui()
             elif event.type == KEYDOWN:
-                if not player.locked:
+                if not player.locked:  # Player number input
                     if event.key == K_0:
                         player.num = 0
                     elif event.key == K_1:
@@ -161,11 +168,7 @@ class sudoku:
                             self.empty -= 1
                         else:
                             player.num = 0
-
-                        # Check for complete board
-                        if self.empty == 0:
-                            game_over = True
-                if event.key == K_UP:
+                if event.key == K_UP:  # Control player position
                     self.pos[1] = (self.pos[1] + 8) % 9
                 elif event.key == K_LEFT:
                     self.pos[0] = (self.pos[0] + 8) % 9
@@ -173,14 +176,22 @@ class sudoku:
                     self.pos[1] = (self.pos[1] + 10) % 9
                 elif event.key == K_RIGHT:
                     self.pos[0] = (self.pos[0] + 10) % 9
-                elif event.key == K_BACKSPACE:
+                elif event.key == K_BACKSPACE:  # Delete tile
                     if player.locked:
                         player.num = 0
                         player.locked = False
                         self.empty += 1
-                elif event.key == K_SPACE:
+                elif event.key == K_SPACE:  # Solve board
                     self.solve()
                 self.draw_ui()
+
+                # Control game
+                if event.key == K_q:  # Quit
+                    pygame.quit()
+                    quit()
+                elif event.key == K_r:  # Reset
+                    game_over = True
+                    pygame.quit()
 
         return game_over
 
@@ -199,15 +210,21 @@ class sudoku:
             for j in range(BOARD_SIZE):
                 if self.board[i][j].num:
                     if self.board[i][j].locked:
-                        self.display.blit(font.render(str(self.board[i][j].num), False, BLACK),
-                                          ((i + 0.25) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
+                        self.display.blit(self.font.render(str(self.board[i][j].num), False, BLACK),
+                                          ((i + 0.3) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
                     else:
-                        self.display.blit(font.render(str(self.board[i][j].num), False, GRAY),
-                                          ((i + 0.25) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
+                        self.display.blit(self.font.render(str(self.board[i][j].num), False, GRAY),
+                                          ((i + 0.3) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
 
         # Current Block
         rect = pygame.Rect(self.pos[0] * TILE_SIZE, self.pos[1] * TILE_SIZE, TILE_SIZE,
                            TILE_SIZE)
         pygame.draw.rect(self.display, RED, rect, 3)
+
+        # Possible inputs
+        for num in range(1, len(self.board) + 1):
+            if self.get_possible(num, self.pos):
+                self.display.blit(self.font.render(str(num), False, GREEN),
+                                  ((num - 0.7) * TILE_SIZE, (len(self.board) + 0.05) * TILE_SIZE))
 
         pygame.display.flip()
