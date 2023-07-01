@@ -4,14 +4,14 @@ from random import sample
 from board import tile
 import time
 
-# pygame constants
+# Game Constants
 BLOCK_SIZE = 3
 BOARD_SIZE = BLOCK_SIZE * BLOCK_SIZE
 TILE_SIZE = 30
 BLOCKS = [i for i in range(BLOCK_SIZE)]
-NUMBERS = [i + 1 for i in range(BOARD_SIZE)]
+NUMBERS = [num + 1 for num in range(BOARD_SIZE)]
 
-# rgb colors
+# RGB Colors
 WHITE = (255, 255, 255)
 GRAY = (128, 128, 128)
 BLACK = (0, 0, 0)
@@ -43,11 +43,11 @@ class sudoku:
                 for j in sample(BLOCKS, len(BLOCKS))]
         nums = sample(NUMBERS, len(NUMBERS))
 
-        # Uses randomized baseline pattern
+        # Randomizes board using pattern
         self.board = [[tile(nums[(3 * (row % 3) + row // 3 + col) % 9], True) for col in cols] for row in rows]
 
         # Remove parts of board
-        positions = [[i, j] for i in range(BOARD_SIZE) for j in range(BOARD_SIZE)]
+        positions = [[row, col] for row in range(BOARD_SIZE) for col in range(BOARD_SIZE)]
         for pos in sample(positions, self.empty):
             self.board[pos[0]][pos[1]].reset()
 
@@ -88,42 +88,20 @@ class sudoku:
 
     def get_possible(self, num, pos):
         # Check row
-        for x in range(len(self.board)):
-            if num == self.board[pos[0]][x].num:
+        for col in range(len(self.board)):
+            if num == self.board[pos[0]][col].num and [pos[0], col] != pos:
                 return False
 
         # Check column
-        for y in range(len(self.board)):
-            if num == self.board[y][pos[1]].num:
+        for row in range(len(self.board)):
+            if num == self.board[row][pos[1]].num and [row, pos[1]] != pos:
                 return False
 
         # Check square
         square = [pos[0] // 3, pos[1] // 3]
-        for i in range(square[0] * 3, square[0] * 3 + 3):
-            for j in range(square[1] * 3, square[1] * 3 + 3):
-                if num == self.board[i][j].num:
-                    return False
-
-        return True
-
-    def check_move(self):
-        num = self.board[self.pos[0]][self.pos[1]].num
-
-        # Check columns
-        for i in range(len(self.board)):
-            if [self.pos[0], i] != self.pos and self.board[self.pos[0]][i].num == num:
-                return False
-
-        # Check rows
-        for i in range(len(self.board)):
-            if [i, self.pos[1]] != self.pos and self.board[i][self.pos[1]].num == num:
-                return False
-
-        # Check square
-        square = [self.pos[0] // 3, self.pos[1] // 3]
-        for i in range(square[0] * 3, square[0] * 3 + 3):
-            for j in range(square[1] * 3, square[1] * 3 + 3):
-                if [i, j] != self.pos and self.board[i][j].num == num:
+        for row in range(square[0] * 3, square[0] * 3 + 3):
+            for col in range(square[1] * 3, square[1] * 3 + 3):
+                if num == self.board[row][col].num and [row, col] != pos:
                     return False
 
         return True
@@ -163,7 +141,7 @@ class sudoku:
                     elif event.key == K_9:
                         player.num = 9
                     elif event.key == K_RETURN:
-                        if self.check_move():
+                        if self.get_possible(player.num, self.pos):
                             player.locked = True
                             self.empty -= 1
                         else:
@@ -206,19 +184,15 @@ class sudoku:
                              thick)
 
         # Draw numbers on board
-        for i in range(BOARD_SIZE):
-            for j in range(BOARD_SIZE):
-                if self.board[i][j].num:
-                    if self.board[i][j].locked:
-                        self.display.blit(self.font.render(str(self.board[i][j].num), False, BLACK),
-                                          ((i + 0.3) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
-                    else:
-                        self.display.blit(self.font.render(str(self.board[i][j].num), False, GRAY),
-                                          ((i + 0.3) * TILE_SIZE, (j + 0.05) * TILE_SIZE))
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                if self.board[row][col].num:
+                    color = BLACK if self.board[row][col].locked else GRAY
+                    self.display.blit(self.font.render(str(self.board[row][col].num), False, color),
+                                      ((row + 0.3) * TILE_SIZE, (col + 0.05) * TILE_SIZE))
 
         # Current Block
-        rect = pygame.Rect(self.pos[0] * TILE_SIZE, self.pos[1] * TILE_SIZE, TILE_SIZE,
-                           TILE_SIZE)
+        rect = pygame.Rect(self.pos[0] * TILE_SIZE, self.pos[1] * TILE_SIZE, TILE_SIZE, TILE_SIZE)
         pygame.draw.rect(self.display, RED, rect, 3)
 
         # Possible inputs
@@ -226,5 +200,17 @@ class sudoku:
             if self.get_possible(num, self.pos):
                 self.display.blit(self.font.render(str(num), False, GREEN),
                                   ((num - 0.7) * TILE_SIZE, (len(self.board) + 0.05) * TILE_SIZE))
+
+        # Game complete overlay
+        if self.empty == 0:
+            font = pygame.font.Font('arial.ttf', 50)
+            text = font.render("Congrats!", True, BLUE)
+            rect = text.get_rect(center=(self.w / 2, self.h / 2 - TILE_SIZE / 2))
+
+            font = pygame.font.Font('arial.ttf', 20)
+            sub_text = font.render("Press r to restart or q to quit.", True, BLUE)
+            sub_rect = sub_text.get_rect(center=(self.w / 2, (BOARD_SIZE + 0.5) * TILE_SIZE))
+            self.display.blit(text, rect)
+            self.display.blit(sub_text, sub_rect)
 
         pygame.display.flip()
