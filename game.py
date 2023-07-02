@@ -55,36 +55,66 @@ class sudoku:
 
     def solve(self):
         # Loop Timeout
-        time.sleep(0.9 ** self.empty / 9)
-        if self.empty == 0:
+        time.sleep(0.99 ** self.empty / 33)
+        pos, possible = self.find_lowest()
+        if pos == [-1, -1]:
             return True
-        pos = self.find_empty()
 
         # Draw UI
         self.pos = pos[:]
         self.draw_ui()
 
         # Loop through all numbers
-        for num in range(1, len(self.board) + 1):
-            if self.get_possible(num, pos):
-                # Try number
-                self.board[pos[0]][pos[1]].lock(num)
-                self.empty -= 1
+        for num in possible:
+            # Try number
+            self.board[pos[0]][pos[1]].lock(num)
+            self.empty -= 1
 
-                # Check if possible, if not => backtrack
-                if self.solve():
-                    return True
-                else:
-                    self.board[pos[0]][pos[1]].reset()
-                    self.empty += 1
+            # Check if possible, if not => backtrack
+            if self.solve():
+                return True
+            else:
+                self.board[pos[0]][pos[1]].reset()
+                self.empty += 1
 
         return False
 
-    def find_empty(self):
+    def find_lowest(self) -> object:
+        lowest = BOARD_SIZE
+        pos = [-1, -1]
+        possible = NUMBERS[:]
+
         for row in range(len(self.board)):
             for col in range(len(self.board[row])):
                 if self.board[row][col].num == 0:
-                    return [row, col]
+                    nums = NUMBERS[:]
+
+                    # Check row
+                    for x in range(len(self.board)):
+                        num = self.board[row][x].num
+                        if num in nums:
+                            nums.remove(num)
+
+                    # Check column
+                    for y in range(len(self.board)):
+                        num = self.board[y][col].num
+                        if num in nums:
+                            nums.remove(num)
+
+                    # Check square
+                    square = [row // 3, col // 3]
+                    for y in range(square[0] * 3, square[0] * 3 + 3):
+                        for x in range(square[1] * 3, square[1] * 3 + 3):
+                            num = self.board[y][x].num
+                            if num in nums:
+                                nums.remove(num)
+
+                    if len(nums) < lowest:
+                        lowest = len(nums)
+                        pos = [row, col]
+                        possible = nums
+
+        return pos, possible
 
     def get_possible(self, num, pos):
         # Check row
@@ -155,6 +185,7 @@ class sudoku:
                 elif event.key == K_RIGHT:
                     self.pos[0] = (self.pos[0] + 10) % 9
                 elif event.key == K_BACKSPACE:  # Delete tile
+                    self.pos = self.find_lowest()
                     if player.locked:
                         player.num = 0
                         player.locked = False
