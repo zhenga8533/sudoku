@@ -35,10 +35,19 @@ class sudoku:
         self.board = None
         self.empty = empty
         self.pos = [0, 0]
-        self.reset()
+        self.reset(empty)
 
-    def reset(self):
-        # Generates board
+    def reset(self, empty):
+        self.backtrack_board_generation()
+
+        # Remove parts of board
+        positions = [[row, col] for row in range(BOARD_SIZE) for col in range(BOARD_SIZE)]
+        for pos in sample(positions, empty):
+            self.board[pos[0]][pos[1]].reset()
+
+        self.draw_ui()
+
+    def pattern_board_generation(self):  # More efficient
         rows = [i * BLOCK_SIZE + j for i in sample(BLOCKS, len(BLOCKS))
                 for j in sample(BLOCKS, len(BLOCKS))]
         cols = [i * BLOCK_SIZE + j for i in sample(BLOCKS, len(BLOCKS))
@@ -48,28 +57,23 @@ class sudoku:
         # Randomizes board using pattern
         self.board = [[tile(nums[(3 * (row % 3) + row // 3 + col) % 9], True) for col in cols] for row in rows]
 
-        # Remove parts of board
-        positions = [[row, col] for row in range(BOARD_SIZE) for col in range(BOARD_SIZE)]
-        for pos in sample(positions, self.empty):
-            self.board[pos[0]][pos[1]].reset()
-
-        self.draw_ui()
-
-    def backtrack(self):
+    def backtrack_board_generation(self):  # Less efficient
+        # Randomizes using backtracking w/ random numbers
         self.board = [[tile(0, False) for row in range(BOARD_SIZE)] for col in range(BOARD_SIZE)]
         self.board[4][4] = tile(random.randint(1, BOARD_SIZE), True)
-        self.solve()
+        self.solve(0)
 
-    def solve(self):
+    def solve(self, timeout):
         # Loop Timeout
-        time.sleep(0.99 ** self.empty / 33)
+        time.sleep(timeout)
         pos, possible = self.find_lowest()
         if pos == [-1, -1]:
             return True
 
         # Draw UI
-        self.pos = pos[:]
-        self.draw_ui()
+        if timeout:
+            self.pos = pos[:]
+            self.draw_ui()
 
         # Loop through all numbers
         for num in possible:
@@ -78,7 +82,7 @@ class sudoku:
             self.empty -= 1
 
             # Check if possible, if not => backtrack
-            if self.solve():
+            if self.solve(timeout):
                 return True
             else:
                 self.board[pos[0]][pos[1]].reset()
@@ -197,7 +201,7 @@ class sudoku:
                         player.locked = False
                         self.empty += 1
                 elif event.key == K_SPACE:  # Solve board
-                    self.solve()
+                    self.solve(0.99 ** self.empty / 33)
                 self.draw_ui()
 
                 # Control game
