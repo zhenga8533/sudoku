@@ -1,3 +1,5 @@
+import random
+
 import pygame
 from pygame.locals import *
 from random import sample
@@ -53,6 +55,11 @@ class sudoku:
 
         self.draw_ui()
 
+    def backtrack(self):
+        self.board = [[tile(0, False) for row in range(BOARD_SIZE)] for col in range(BOARD_SIZE)]
+        self.board[4][4] = tile(random.randint(1, BOARD_SIZE), True)
+        self.solve()
+
     def solve(self):
         # Loop Timeout
         time.sleep(0.99 ** self.empty / 33)
@@ -84,8 +91,8 @@ class sudoku:
         pos = [-1, -1]
         possible = NUMBERS[:]
 
-        for row in range(len(self.board)):
-            for col in range(len(self.board[row])):
+        for row in sample(range(BOARD_SIZE), BOARD_SIZE):
+            for col in sample(range(BOARD_SIZE), BOARD_SIZE):
                 if self.board[row][col].num == 0:
                     nums = NUMBERS[:]
 
@@ -185,7 +192,6 @@ class sudoku:
                 elif event.key == K_RIGHT:
                     self.pos[0] = (self.pos[0] + 10) % 9
                 elif event.key == K_BACKSPACE:  # Delete tile
-                    self.pos = self.find_lowest()
                     if player.locked:
                         player.num = 0
                         player.locked = False
